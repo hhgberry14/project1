@@ -85,10 +85,18 @@ import java.time.Duration;
 import java.util.LinkedList;
 import java.util.Queue;
 
+/**
+ * The OrderBook actor manages incoming car orders and assigns them to available production lines.
+ * It maintains a queue of pending orders and periodically checks for available production lines.
+ */
 public class OrderBook extends AbstractBehavior<OrderBook.Command> {
 
-    public interface Command {}
+    // Interface for all possible messages this actor can receive
+    public interface Command {
+    }
 
+
+    //Message representing a new order to be added to the book
     public static final class AddOrder implements Command {
         public final int orderNumber;
 
@@ -97,8 +105,10 @@ public class OrderBook extends AbstractBehavior<OrderBook.Command> {
         }
     }
 
+    //Internal message to trigger order assignment attempts
     public static final class AssignOrder implements Command {}
 
+    //Message from ProductionLine indicating it's available for work
     public static final class ProductionLineAvailable implements Command {
         public final akka.actor.typed.ActorRef<ProductionLine.Command> productionLine;
 
@@ -107,6 +117,10 @@ public class OrderBook extends AbstractBehavior<OrderBook.Command> {
         }
     }
 
+    /**
+     * Factory method to create the OrderBook actor
+     * @param productionLines Array of available production line actors
+     */
     public static Behavior<Command> create(akka.actor.typed.ActorRef<ProductionLine.Command>[] productionLines) {
         return Behaviors.setup(context -> Behaviors.withTimers(timers ->
                 new OrderBook(context, timers, productionLines)));
@@ -122,6 +136,8 @@ public class OrderBook extends AbstractBehavior<OrderBook.Command> {
         super(context);
         this.timers = timers;
         this.productionLines = productionLines;
+
+        // Schedule periodic order assignment attempts every second
         timers.startTimerWithFixedDelay(new AssignOrder(), Duration.ofSeconds(1));
     }
 
@@ -134,12 +150,14 @@ public class OrderBook extends AbstractBehavior<OrderBook.Command> {
                 .build();
     }
 
+    //Handles new order additions to the book
     private Behavior<Command> onAddOrder(AddOrder msg) {
         getContext().getLog().info("Order added to book: {}", msg.orderNumber);
         orders.add(msg.orderNumber);
         return this;
     }
 
+   //Handles periodic order assignment attempts
     private Behavior<Command> onAssignOrder(AssignOrder msg) {
         if (!orders.isEmpty()) {
             for (var productionLine : productionLines) {
@@ -149,8 +167,11 @@ public class OrderBook extends AbstractBehavior<OrderBook.Command> {
         return this;
     }
 
+    //Handles production line availability responses
     private Behavior<Command> onProductionLineAvailable(ProductionLineAvailable msg) {
         if (!orders.isEmpty()) {
+
+            // Assign the oldest order to the available production line
             Integer order = orders.poll();
             msg.productionLine.tell(new ProductionLine.StartProduction(order));
             getContext().getLog().info("Order {} assigned to production line", order);

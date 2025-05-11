@@ -120,10 +120,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Manages inventory of special car parts/features that workers can install.
+ * Handles both part distribution and restocking when inventory runs low.
+ */
 public class LocalStorage extends AbstractBehavior<LocalStorage.Command> {
 
+
+     //Interface for all storage commands
     public interface Command {}
 
+
+     //Message requesting special items for a car order
     public static final class RequestSpecialItems implements Command {
         public final int orderNumber;
         public final akka.actor.typed.ActorRef<Worker.Command> worker;
@@ -138,6 +146,7 @@ public class LocalStorage extends AbstractBehavior<LocalStorage.Command> {
         }
     }
 
+    //Message indicating restocking has been completed
     public static final class RestockCompleted implements Command {
         public final String[] itemNames;
 
@@ -146,10 +155,12 @@ public class LocalStorage extends AbstractBehavior<LocalStorage.Command> {
         }
     }
 
+    // Available special features in the system
     private static final String[] SPECIAL_ITEMS = {
             "Ledersitze", "Klimaautomatik", "Elektrische Fensterheber", "Automatikgetriebe"
     };
 
+    // Factory method to create storage actor
     public static Behavior<Command> create() {
         return Behaviors.setup(context -> new LocalStorage(context));
     }
@@ -157,11 +168,12 @@ public class LocalStorage extends AbstractBehavior<LocalStorage.Command> {
     private final Map<String, Integer> inventory = new HashMap<>();
     private final ActorContext<Command> context;
 
+    //Constructor that initializes inventory
     private LocalStorage(ActorContext<Command> context) {
         super(context);
         this.context = context;
 
-        // Initialize inventory
+        // Initialize with 4 units of each special item
         for (String item : SPECIAL_ITEMS) {
             inventory.put(item, 4);
         }
@@ -175,7 +187,10 @@ public class LocalStorage extends AbstractBehavior<LocalStorage.Command> {
                 .build();
     }
 
+    //Handles requests for special items from workers
     private Behavior<Command> onRequestSpecialItems(RequestSpecialItems msg) {
+
+        // Randomly select two distinct special items
         String item1 = SPECIAL_ITEMS[ThreadLocalRandom.current().nextInt(SPECIAL_ITEMS.length)];
         String item2;
         do {
@@ -194,7 +209,7 @@ public class LocalStorage extends AbstractBehavior<LocalStorage.Command> {
         }
 
         if (allAvailable) {
-            // Deduct from inventory
+            // Deduct from inventory and fulfill request
             for (String item : requestedItems) {
                 inventory.put(item, inventory.get(item) - 1);
             }
@@ -205,7 +220,7 @@ public class LocalStorage extends AbstractBehavior<LocalStorage.Command> {
         } else {
             context.getLog().info("Special items not available, restocking for order {}", msg.orderNumber);
 
-            // Restock all items
+            // Initiate restocking (takes 10-15 seconds)
             int restockTime = ThreadLocalRandom.current().nextInt(10, 16);
             context.scheduleOnce(
                     Duration.ofSeconds(restockTime),
@@ -217,6 +232,7 @@ public class LocalStorage extends AbstractBehavior<LocalStorage.Command> {
         return this;
     }
 
+    //Handles completion of restocking operation
     private Behavior<Command> onRestockCompleted(RestockCompleted msg) {
         for (String item : msg.itemNames) {
             inventory.put(item, inventory.getOrDefault(item, 0) + 3);

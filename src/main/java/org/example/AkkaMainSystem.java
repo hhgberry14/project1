@@ -10,6 +10,7 @@ import akka.actor.typed.javadsl.Receive;
  * The main system actor that initializes and coordinates all other actors in the car production system.
  * This serves as the root actor of the actor hierarchy.
  */
+
 public class AkkaMainSystem extends AbstractBehavior<AkkaMainSystem.Create> {
 
     //Simple message to trigger system initialization
@@ -21,9 +22,11 @@ public class AkkaMainSystem extends AbstractBehavior<AkkaMainSystem.Create> {
 
     private final ActorContext<Create> context;
 
-    /**
-     * Constructor that initializes all system components
-     */
+
+/**
+ * Constructor that initializes all system components
+ */
+
     private AkkaMainSystem(ActorContext<Create> context) {
         super(context);
         this.context = context;

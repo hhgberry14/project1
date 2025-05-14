@@ -11,16 +11,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Manages inventory of special car parts/features that workers can install.
- * Handles both part distribution and restocking when inventory runs low.
- */
 public class LocalStorage extends AbstractBehavior<LocalStorage.Command> {
 
-
-     //Interface for all storage commands
     public interface Command {}
-
 
      //Message requesting special items for a car order
     public static final class RequestSpecialItems implements Command {
@@ -104,7 +97,8 @@ public class LocalStorage extends AbstractBehavior<LocalStorage.Command> {
             for (String item : requestedItems) {
                 inventory.put(item, inventory.get(item) - 1);
             }
-            context.getLog().info("Special items {} and {} provided for order {}", item1, item2, msg.orderNumber);
+            context.getLog().info("Special items: {} and {} provided for order number {}", item1, item2,
+                    msg.orderNumber);
 
             // Notify worker immediately
             msg.worker.tell(new Worker.SpecialRequestsReceived(msg.orderNumber, msg.productionLine));

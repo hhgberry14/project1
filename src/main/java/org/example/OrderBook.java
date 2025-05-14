@@ -78,6 +78,7 @@ public class OrderBook extends AbstractBehavior<OrderBook.Command> {
         this.productionLines = productionLines;
 
         getContext().getLog().info("OrderBook started with {} production lines", productionLines.length);
+        timers.startTimerWithFixedDelay(new AssignOrder(), Duration.ofSeconds(10));
     }
 
     @Override

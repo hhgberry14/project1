@@ -1,105 +1,3 @@
-//package org.example;
-//
-//import akka.actor.typed.*;
-//import akka.actor.typed.javadsl.*;
-//
-//import java.util.*;
-//
-//public class ProductionLine extends AbstractBehavior<ProductionLine.Command> {
-//
-//    public interface Command {}
-//
-//    public static final class StartProduction implements Command {
-//        public final String orderId;
-//        public final int lineNumber;
-//
-//        public StartProduction(String orderId, int lineNumber) {
-//            this.orderId = orderId;
-//            this.lineNumber = lineNumber;
-//        }
-//    }
-//
-//    public static final class RegisterWorkers implements Command {
-//        public final List<ActorRef<Worker.Command>> workers;
-//
-//        @SafeVarargs
-//        public RegisterWorkers(ActorRef<Worker.Command>... workers) {
-//            this.workers = Arrays.asList(workers);
-//        }
-//    }
-//
-//    public static final class WorkerAvailable implements Command {
-//        public final ActorRef<Worker.Command> worker;
-//        public final int lineNumber;
-//
-//        public WorkerAvailable(ActorRef<Worker.Command> worker, int lineNumber) {
-//            this.worker = worker;
-//            this.lineNumber = lineNumber;
-//        }
-//    }
-//
-//    public static Behavior<Command> create(ActorRef<LocalStorage.Command> localStorage) {
-//        return Behaviors.setup(ctx -> new ProductionLine(ctx, localStorage));
-//    }
-//
-//    private final List<ActorRef<Worker.Command>> workers = new ArrayList<>();
-//    private final Set<ActorRef<Worker.Command>> busyWorkers = new HashSet<>();
-//    private final ActorRef<LocalStorage.Command> localStorage;
-//
-//    private ProductionLine(ActorContext<Command> context, ActorRef<LocalStorage.Command> localStorage) {
-//        super(context);
-//        this.localStorage = localStorage;
-//    }
-//
-//    @Override
-//    public Receive<Command> createReceive() {
-//        return newReceiveBuilder()
-//                .onMessage(StartProduction.class, this::onStartProduction)
-//                .onMessage(RegisterWorkers.class, this::onRegisterWorkers)
-//                .onMessage(WorkerAvailable.class, this::onWorkerAvailable)
-//                .build();
-//    }
-//
-//    private Behavior<Command> onRegisterWorkers(RegisterWorkers msg) {
-//        workers.addAll(msg.workers);
-//        getContext().getLog().info("Registered {} workers", workers.size());
-//        return this;
-//    }
-//
-//    private Behavior<Command> onStartProduction(StartProduction msg) {
-//        Optional<ActorRef<Worker.Command>> worker = getAvailableWorker();
-//        if (worker.isPresent()) {
-//            busyWorkers.add(worker.get());
-//            getContext().getLog().info("Starting production for {} on line {}", msg.orderId, msg.lineNumber);
-//            worker.get().tell(new Worker.BuildCarBody(
-//                    msg.orderId,
-//                    getContext().getSelf(),
-//                    localStorage,
-//                    msg.lineNumber
-//            ));
-//        } else {
-//            getContext().getLog().warn("No available workers for order {}", msg.orderId);
-//            // Retry after delay
-//            getContext().getSelf().tell(msg);
-//        }
-//        return this;
-//    }
-//
-//    private Optional<ActorRef<Worker.Command>> getAvailableWorker() {
-//        List<ActorRef<Worker.Command>> available = new ArrayList<>(workers);
-//        available.removeAll(busyWorkers);
-//        if (available.isEmpty()) return Optional.empty();
-//        Collections.shuffle(available);
-//        return Optional.of(available.get(0));
-//    }
-//
-//    private Behavior<Command> onWorkerAvailable(WorkerAvailable msg) {
-//        busyWorkers.remove(msg.worker);
-//        getContext().getLog().info("Worker available on line {}", msg.lineNumber);
-//        return this;
-//    }
-//}
-
 package org.example;
 
 import akka.actor.typed.Behavior;
@@ -188,9 +86,21 @@ public class ProductionLine extends AbstractBehavior<ProductionLine.Command> {
     }
 
     // Handles availability check requests from OrderBook
+//    private Behavior<Command> onIsAvailable(IsAvailable msg) {
+//        if (isAvailable) {
+//            msg.replyTo.tell(new OrderBook.ProductionLineAvailable(getContext().getSelf()));
+//            System.out.print("hihi");
+//        }
+//        return this;
+//    }
+
     private Behavior<Command> onIsAvailable(IsAvailable msg) {
         if (isAvailable) {
             msg.replyTo.tell(new OrderBook.ProductionLineAvailable(getContext().getSelf()));
+            System.out.println("hihi");
+        }
+        else {
+            System.out.println("haha");
         }
         return this;
     }
